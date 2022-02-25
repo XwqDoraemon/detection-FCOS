@@ -1,0 +1,11 @@
+epochs: 24
+batch_size: 16
+LR_INIT: 1e-3
+n_cpu: 0
+n_gpu: '0'
+PB: True
+is_clip: True
+clip_val: 0.2
+chinkpoint: True
+chinkpint_path: '/hy-tmp/training_dir_giou/model_9.pth'
+data_root_dir: '/hy-tmp/bdd100k'
