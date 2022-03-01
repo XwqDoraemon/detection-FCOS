@@ -100,7 +100,7 @@ mAP=====>0.335
 
 可视化效果：
 
-![](./images/infer_baseline/cac32276-cf233a28.jpg)
+![](images/infer_baseline/cac32276-cf233a28.jpg)
 
 ## 涨点triks
 
@@ -120,38 +120,38 @@ mAP=====>0.335
 
 1. 在道路场景中物体位置有着相应的规律，采用马赛克的方法虽然可以丰富场景，但是许多场景是现实中不可能出现的，比如天空上方突然出现一条马路的场景。
 
-   ![](../../liwin/git/images/29.jpg)
+   ![](images/29.jpg)
 
 2. 在BDD100K中的黑夜场景中，有的车辆被裁剪一半后很难分辨出其是车辆，此种情况会干扰训练
 
 ### GIOUloss
 
-GIou公式：
-
-$$GIoU = IoU-\frac{|C-(A\cup B)|}{C}  $$
+<img src="images/image-20220301183736193.png" alt="image-20220301183736193" style="zoom:25%;" />
 
 * Giou的取值范围为[-1,1],因此GIoUloss公式为
 
-  $$GiouLoss = -log（(1+Giou)/2）$$
+  <img src="images/image-20220301183836672.png" alt="image-20220301183836672" style="zoom:25%;" />
 
 ### PBsamper
 
-在本次任务中数据明显具有不均衡的特点，采用渐进式均衡采样的方法略有涨点，当然与数据增强的方法配合才有效。
+在本次任务中数据明显具有类别不均衡的特点，采用渐进式均衡采样的方法略有涨点，当然与数据增强的方法配合才有效。
 
-公式1  : $P_j=\frac{n_j^q}{\sum_{n=1}^{100}{n_i^q}}$
+公式1  ：
 
-* $p_j^{IB}$: 当公式（1）的q 取1 时得到的策略：样本多，采样概率大
+<img src="images/image-20220301184047231.png" alt="image-20220301184047231" style="zoom:25%;" />
 
-* $p_j^{CB}$:当公式（1）的q 取0 时得到的策略，$P_j$全相等，都是1/C
+* <img src="images/image-20220301184159730.png" alt="image-20220301184159730" style="zoom:25%;" />：当公式（1)的q 取1 时得到的策略：样本多，采样概率大
 
-公式2： $$p^{PB}_j(t) = (1-\frac{t}{T})p_j^{IB}+\frac{t}{T}P^{CB}_j$$
+* <img src="images/image-20220301184234893.png" alt="image-20220301184234893" style="zoom:25%;" />当公式（1)的q 取0 时得到的策略，$P_j$全相等，都是1/C
+
+公式2： <img src="images/image-20220301184118272.png" alt="image-20220301184118272" style="zoom:25%;" />
 
 **实现方法**:
 
 1. 获取到每个样本的标签，在目标检测中每个样本有多个标签，选取数量最少的标签为该样本标签
 2. 统计每个类标签的数量
-3. 根据每个类标签数量计算每个类的$p_j^{PB}$ 
-4. $\frac{p_j^{PB}}{all}$计算每个样本的采样概率，赋值给WeightedRandomSampler
+3. 根据每个类标签数量计算每个类的<img src="images/image-20220301184319221.png" alt="image-20220301184319221" style="zoom:25%;" />
+4. 计算每个样本的采样概率，赋值给WeightedRandomSampler
 
 ## TODO
 
