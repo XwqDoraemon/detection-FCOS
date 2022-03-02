@@ -1,14 +1,3 @@
-<head>
-    <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-    <script type="text/x-mathjax-config">
-        MathJax.Hub.Config({
-            tex2jax: {
-            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
-            inlineMath: [['$','$']]
-            }
-        });
-    </script>
-</head>
 
 # 基于FCOS在BDD100k数据集上的检测任务
 
@@ -82,7 +71,16 @@
 
 1. 实时性要达到要求，实时性指标：在车载GPU上Delay要低于5ms
 2. 在交通方面的任务中，安全为高优先级，因此Recall必须高
+## Get Start
+### Train
+~~~shell
+sh sh/train.sh
+~~~sh
+sh sh/infer.sh
 
+~~~
+### infer
+~~~
 ## baseline
 
 ### 训练效果
@@ -100,7 +98,7 @@ ap for other vehicle is 0.018769860660151537
 ap for motorcycle is 0.28814182959003076
 ap for bicycle is 0.34815424770876635
 ap for traffic light is 0.5079547777075739
-ap for traffic sign is 0.4063261723865
+ap for traffic sign is 0.4663261723865
 mAP=====>0.335
 ~~~
 
@@ -119,10 +117,10 @@ mAP=====>0.335
 
 | 由于训练BDD100K过于耗费时间，选取前10K图片进行实验，实验结果如下：
 
-| 马赛克 | PB samper | GIOU | 多尺度缩放 | map             |
+| 马赛克 | PB Samper | GIoU | 多尺度缩放 | mAP             |
 | ------ | --------- | ---- | ---------- | --------------- |
 | No     | NO        | No   | NO         | 0.187           |
-| Yes    | No        | NO   | Yes        | 0.169（-0.018） |
+| Yes    | No        | NO   | No         | 0.148（-0.039） |
 | NO     | NO        | NO   | Yes        | 0.198（+0.011） |
 | NO     | NO        | Yes  | Yes        | 0.210（+0.012） |
 | No     | Yes       | Yes  | Yes        | 0.217（+0.005） |
@@ -137,26 +135,18 @@ mAP=====>0.335
 
 2. 在BDD100K中的黑夜场景中，有的车辆被裁剪一半后很难分辨出其是车辆，此种情况会干扰训练
 
-### GIOUloss
-
 ### PBsamper
 
 在本次任务中数据明显具有类别不均衡的特点，采用渐进式均衡采样的方法略有涨点，当然与数据增强的方法配合才有效。
-
-公式1:$$P_j=\frac{n_j^q}{\sum_{n=1}^{100}{n_i^q}}$$
-
-* $p_j^{IB}$：当公式（1)的q 取1 时得到的策略：样本多，采样概率大
-
-* $p_j^{CB}$当公式（1)的q 取0 时得到的策略，$P_j$全相等，都是1/C
-
-公式2：$ p^{PB}_j(t) = (1-\frac{t}{T})p_j^{IB}+\frac{t}{T}P^{CB}_j$ 可实现渐进式均衡采样。
 
 **实现方法**:
 
 1. 获取到每个样本的标签，在目标检测中每个样本有多个标签，选取数量最少的标签为该样本标签
 2. 统计每个类标签的数量
-3. 根据每个类标签数量计算每个类的$p_j^{PB}$
+3. 根据每个类标签数量计算每个类的采样概率
 4. 计算每个样本的采样概率，赋值给WeightedRandomSampler
+
+
 
 ## TODO
 

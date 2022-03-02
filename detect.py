@@ -7,7 +7,7 @@ import numpy as np
 from dataset.bdd100k_dataset import BDD100kDataset
 import time
 from model.config import DefaultConfig
-
+import argparse
 def preprocess_img(image,input_ksize):
     '''
     resize image and bboxes
@@ -51,7 +51,11 @@ def convertSyncBNtoBN(module):
     return module_output
 
 if __name__=="__main__":
-
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c","--checkpoint" ,required=True ,help="checkpoint of model")
+    parser.add_argument("-i","--image_path",required=True,help = "infer image path")
+    parser.add_argument("-o","output_path",required=True,help = "output path")
+    args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     class_name = BDD100kDataset.CLASSES_NAME
     colors_list = [list(np.random.choice(range(256), size=3)) for i in range(len(class_name))]
@@ -60,12 +64,12 @@ if __name__=="__main__":
     model=FCOSDetector(mode="inference",config=DefaultConfig).to(device)
     # model = torch.nn.DataParallel(model)
     # model.load_state_dict(torch.load("./training_dir/model_7.pth",map_location=torch.device('cpu')))
-    model.load_state_dict(torch.load("./training_dir/model_23.pth", map_location=torch.device('cpu'))["model_state_dict"])
+    model.load_state_dict(torch.load(args.checkpoint, map_location=torch.device('cpu'))["model_state_dict"])
     model=model.eval()
     print("===>success loading model")
     
-    root="/home/myjian/Workespace/PythonProject/Dataset/bdd100k/images/100k/test/"
-    out_path="/home/myjian/Workespace/PythonProject/detection/FCOS/out_images"
+    root=args.image_path
+    out_path=args.output_path
     names=os.listdir(root)
     for name in names:
         img_bgr = cv2.imread(root + name)

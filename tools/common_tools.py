@@ -203,15 +203,12 @@ def make_logger(out_dir,log_name):
     """
     
     # 创建logger
+    assert os.path.exists(out_dir)
     path_log = os.path.join(out_dir, log_name)
     logger = Logger(path_log)
     logger = logger.init_logger()
     return logger
-def handle_exception(exc_type, exc_value, exc_traceback):
-    if issubclass(exc_type, KeyboardInterrupt):
-        sys.__excepthook__(exc_type, exc_value, exc_traceback)
-        return
-    logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback)) # 重点
+
 
 
 

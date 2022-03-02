@@ -118,7 +118,11 @@ def main(opt):
                           "epoch": epoch}
         torch.save(checkpoint,
             os.path.join(output_dir, "model_{}.pth".format(epoch + 1)))
-        
+def handle_exception(exc_type, exc_value, exc_traceback):
+        if issubclass(exc_type, KeyboardInterrupt):
+            sys.__excepthook__(exc_type, exc_value, exc_traceback)
+            return
+        logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback)) # 重点
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config_file', type=str, default='./config/base.yaml', help='specify config file')
@@ -134,9 +138,8 @@ if __name__ == '__main__':
     if not os.path.exists(res_dir):
         os.mkdir(res_dir)
     logger = make_logger(res_dir,args.log)
+    
     print(args)
-
-    sys.excepthook = handle_exception 
     opt = parse_config()
     main(opt)
 

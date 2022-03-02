@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+# @file name  : bdd100k_dataset.py
+# @author     : XueWQ
+# @date       : 2021-03-14
+# @brief      : BDD100k数据集dataset
+"""
 import torch
 import xml.etree.ElementTree as ET
 import os
@@ -109,7 +116,6 @@ class BDD100kDataset(torch.utils.data.Dataset):
         image_paded: input_ksize
         bboxes: [None,4]
         '''
-    
         min_side, max_side  = input_ksize
         h,  w, _  = image.shape
 
