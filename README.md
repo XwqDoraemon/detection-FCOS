@@ -1,3 +1,15 @@
+<head>
+    <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+            tex2jax: {
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+            inlineMath: [['$','$']]
+            }
+        });
+    </script>
+</head>
+
 # 基于FCOS在BDD100k数据集上的检测任务
 
 ## 任务简介
@@ -131,19 +143,19 @@ mAP=====>0.335
 
 在本次任务中数据明显具有类别不均衡的特点，采用渐进式均衡采样的方法略有涨点，当然与数据增强的方法配合才有效。
 
-公式1:<p align="center"><img src="svgs/6e50489fa919461956cbfacc344cd6f6.svg?invert_in_darkmode" align=middle width=104.18004465pt height=44.887882049999995pt/></p>
+公式1:$$P_j=\frac{n_j^q}{\sum_{n=1}^{100}{n_i^q}}$$
 
-* <img src="svgs/82b9821fbbff64ddb0eab2e55d8c2127.svg?invert_in_darkmode" align=middle width=25.483576799999987pt height=27.6567522pt/>：当公式（1)的q 取1 时得到的策略：样本多，采样概率大
+* $p_j^{IB}$：当公式（1)的q 取1 时得到的策略：样本多，采样概率大
 
-* <img src="svgs/547a9c9660e5e42b0f8517c2b9b4984c.svg?invert_in_darkmode" align=middle width=28.997702249999985pt height=27.6567522pt/>当公式（1)的q 取0 时得到的策略，<img src="svgs/40fa09318e2798c7881b3513e10ca968.svg?invert_in_darkmode" align=middle width=16.65815579999999pt height=22.465723500000017pt/>全相等，都是1/C
+* $p_j^{CB}$当公式（1)的q 取0 时得到的策略，$P_j$全相等，都是1/C
 
-公式2：<img src="svgs/b92c8ffdaa3bbe262e0703f187ac217a.svg?invert_in_darkmode" align=middle width=218.37704129999997pt height=27.6567522pt/> 可实现渐进式均衡采样。
+公式2：$ p^{PB}_j(t) = (1-\frac{t}{T})p_j^{IB}+\frac{t}{T}P^{CB}_j$ 可实现渐进式均衡采样。
 
 **实现方法**:
 
 1. 获取到每个样本的标签，在目标检测中每个样本有多个标签，选取数量最少的标签为该样本标签
 2. 统计每个类标签的数量
-3. 根据每个类标签数量计算每个类的<img src="svgs/8a9a5de26876cc968d9cfd0ccdc77cd5.svg?invert_in_darkmode" align=middle width=28.90193129999999pt height=27.6567522pt/>
+3. 根据每个类标签数量计算每个类的$p_j^{PB}$
 4. 计算每个样本的采样概率，赋值给WeightedRandomSampler
 
 ## TODO
