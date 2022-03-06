@@ -77,7 +77,7 @@ class GenTargets(nn.Module):
             
         return torch.cat(cls_targets_all_level,dim=1),torch.cat(cnt_targets_all_level,dim=1),torch.cat(reg_targets_all_level,dim=1)
 
-    def _gen_level_targets(self,out,gt_boxes,classes,stride,limit_range,sample_radiu_ratio=1.5):
+    def _gen_level_targets(self,out,gt_boxes,classes,stride,limit_range,dynamic = False,sample_radiu_ratio=1.5):
         '''
         Args  
         out list contains [[batch_size,class_num,h,w],[batch_size,1,h,w],[batch_size,4,h,w]]  
@@ -94,6 +94,7 @@ class GenTargets(nn.Module):
         m=gt_boxes.shape[1]
 
         cls_logits=cls_logits.permute(0,2,3,1) #[batch_size,h,w,class_num]  
+
         coords=coords_fmap2orig(cls_logits,stride).to(device=gt_boxes.device)#[h*w,2]
 
         cls_logits=cls_logits.reshape((batch_size,-1,class_num))#[batch_size,h*w,class_num]  
@@ -158,11 +159,12 @@ class GenTargets(nn.Module):
         # assert num_pos.shape==(batch_size,)
         mask_pos_2=mask_pos_2>=1
         assert mask_pos_2.shape==(batch_size,h_mul_w)
-        cls_targets[~mask_pos_2]=0#[batch_size,h*w,1]
-        cnt_targets[~mask_pos_2]=-1
-        reg_targets[~mask_pos_2]=-1
-        
+        if not dynamic:
+            cls_targets[~mask_pos_2]= 0 #[batch_size,h*w,1]
+            cnt_targets[~mask_pos_2]= -1
+            reg_targets[~mask_pos_2]= -1
         return cls_targets,cnt_targets,reg_targets
+
 class GenDynamicTargets(GenTargets):
     def __init__(self,strides, limit_range):
         super().__init__(strides, limit_range)
@@ -215,24 +217,27 @@ class GenDynamicTargets(GenTargets):
         cls_logits,coords=self._reshape_cat_out(cls_logits, self.strides)#[batch_size,sum(_h*_w),class_num]
         cnt_logits,_=self._reshape_cat_out(cnt_logits, self.strides)#[batch_size,sum(_h*_w),1]
         reg_preds,_=self._reshape_cat_out(reg_preds, self.strides)#[batch_size,sum(_h*_w),4]
-
         boxes=self._coords2boxes(coords[:,:2],reg_preds)#[batch_size,sum(_h*_w),4]
-
         num_priors =  coords.shape[0]
-        cls_target, cnt_target, reg_target = [[]] * batch_size, [[]] * batch_size, [[]] * batch_size
+        cls_targets, cnt_targets, reg_targets = [],[],[]
+    
         for i in range(batch_size):
-            cls_target[i], cnt_target[i], reg_target[i] = self.target_assign_single_img(cls_logits[i], 
+            cls_target, cnt_target, reg_target = self.target_assign_single_img(cls_logits[i], 
                     coords, boxes[i], batch_gt_bboxes[i], batch_gt_labels[i])
             if cnt_target[i].dim() < 2:
                 cnt_target[i].reshape(-1,1)
-        #cls_targets, cnt_targets, reg_targets = self._gen_targets(inputs)
-        #targets : list contains three elements [[batch_size,sum(_h*_w),1],[batch_size,sum(_h*_w),1],[batch_size,sum(_h*_w),4]]
+            cls_targets.append(cls_target)
+            cnt_targets.append(cnt_target)
+            reg_targets.append(reg_target)
+        # cls_targets, cnt_targets, reg_targets = self._gen_targets(inputs)
+        # targets : list contains three elements [[batch_size,sum(_h*_w),1],[batch_size,sum(_h*_w),1],[batch_size,sum(_h*_w),4]]
 
-        cls_targets = torch.cat(cls_target).reshape(batch_size, -1, 1)
-        cnt_targets = torch.cat(cnt_target).reshape(batch_size, -1, 1)
-        reg_targets = torch.cat(reg_target).reshape(batch_size, -1, 4)
+        cls_targets = torch.cat(cls_targets).reshape(batch_size, -1, 1)
+        cnt_targets = torch.cat(cnt_targets).reshape(batch_size, -1, 1)
+        reg_targets = torch.cat(reg_targets).reshape(batch_size, -1, 4)
 
         return cls_targets,cnt_targets,reg_targets
+
 
     @torch.no_grad()
     def target_assign_single_img(
@@ -302,7 +307,6 @@ class GenDynamicTargets(GenTargets):
             top_bottom_min = torch.min(bbox_targets[..., 1], bbox_targets[..., 3])
             top_bottom_max = torch.max(bbox_targets[..., 1], bbox_targets[..., 3])
             cnt_targets=((left_right_min*top_bottom_min)/(left_right_max*top_bottom_max+1e-10)).sqrt().unsqueeze(dim=-1)#[batch_size,h*w,1]
-
             cnt_targets[cnt_targets==0.]=-1
 
         #return (
@@ -350,8 +354,6 @@ class GenDynamicTargets(GenTargets):
 
         ltrb =torch.stack([l, t, r, b]).T #[nunum_pos_samples, 4]
         return ltrb 
-
-
     def _coords2boxes(self,coords,offsets):
         '''
         Args
@@ -362,24 +364,6 @@ class GenDynamicTargets(GenTargets):
         x2y2=coords[None,:,:]+offsets[...,2:]#[batch_size,sum(_h*_w),2]
         boxes=torch.cat([x1y1,x2y2],dim=-1)#[batch_size,sum(_h*_w),4]
         return boxes
-
-    def _gen_targets(self, inputs):
-        cls_logits,cnt_logits,reg_preds=inputs[0]
-        gt_boxes=inputs[1]
-        classes=inputs[2]
-        cls_targets_all_level=[]
-        cnt_targets_all_level=[]
-        reg_targets_all_level=[]
-        assert len(self.strides)==len(cls_logits)
-        for level in range(len(cls_logits)):
-            level_out=[cls_logits[level],cnt_logits[level],reg_preds[level]]
-            level_targets=self._gen_level_targets(level_out,gt_boxes,classes,self.strides[level],
-                                                    self.limit_range[level], mode='dynamic')
-            cls_targets_all_level.append(level_targets[0])
-            cnt_targets_all_level.append(level_targets[1])
-            reg_targets_all_level.append(level_targets[2])
-        return torch.cat(cls_targets_all_level,dim=1),torch.cat(cnt_targets_all_level,dim=1),torch.cat(reg_targets_all_level,dim=1)
-
 def compute_cls_loss(preds,targets,mask):
     '''
     Args  
@@ -537,6 +521,7 @@ def focal_loss_from_logits(preds,targets,gamma=2.0,alpha=0.25):
     '''
     preds=preds.sigmoid()
     pt=preds*targets+(1.0-preds)*(1.0-targets)
+    pt = torch.clamp(pt,min=1e-7)  #此处需要限制，
     w=alpha*targets+(1.0-alpha)*(1.0-targets)
     loss=-w*torch.pow((1.0-pt),gamma)*pt.log()
     return loss.sum()

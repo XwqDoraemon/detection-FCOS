@@ -117,13 +117,14 @@ mAP=====>0.335
 
 | 由于训练BDD100K过于耗费时间，选取前10K图片进行实验，实验结果如下：
 
-| 马赛克 | PB Samper | GIoU | 多尺度缩放 | mAP             |
-| ------ | --------- | ---- | ---------- | --------------- |
-| No     | NO        | No   | NO         | 0.187           |
-| Yes    | No        | NO   | No         | 0.148（-0.039） |
-| NO     | NO        | NO   | Yes        | 0.198（+0.011） |
-| NO     | NO        | Yes  | Yes        | 0.210（+0.012） |
-| No     | Yes       | Yes  | Yes        | 0.217（+0.005） |
+| 马赛克 | PB Samper | GIoU | 多尺度缩放 | Dynamic Assigner | mAP             |
+| ------ | --------- | ---- | ---------- | ---------------- | --------------- |
+| No     | NO        | No   | NO         | No               | 0.187           |
+| Yes    | No        | NO   | No         | No               | 0.148（-0.039） |
+| NO     | NO        | NO   | Yes        | NO               | 0.198（+0.011） |
+| NO     | NO        | Yes  | Yes        | No               | 0.210（+0.012） |
+| No     | Yes       | Yes  | Yes        | No               | 0.217（+0.005） |
+| No     | Yes       | Yes  | Yes        | Yes              | 0.228 (+0.011)  |
 
 ### 马赛克
 
@@ -135,7 +136,7 @@ mAP=====>0.335
 
 2. 在BDD100K中的黑夜场景中，有的车辆被裁剪一半后很难分辨出其是车辆，此种情况会干扰训练
 
-### PBsamper
+### PB Samper
 
 在本次任务中数据明显具有类别不均衡的特点，采用渐进式均衡采样的方法略有涨点，当然与数据增强的方法配合才有效。
 
@@ -146,11 +147,13 @@ mAP=====>0.335
 3. 根据每个类标签数量计算每个类的采样概率
 4. 计算每个样本的采样概率，赋值给WeightedRandomSampler
 
+## Dynamic Assigner
 
+标签动态匹配，参考NanoDet，参考作者知乎https://zhuanlan.zhihu.com/p/449912627。
 
 ## TODO
 
 - [ ] GFocal
 
-- [ ] Dynamic Assigner
+- [x] Dynamic Assigner
 
